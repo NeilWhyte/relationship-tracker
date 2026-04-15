@@ -435,7 +435,14 @@ export default function App() {
                         ...(overdue ? styles.contactButtonOverdue : dueSoon ? styles.contactButtonDueSoon : {}),
                       }}
                     >
-                      <div style={styles.contactName}>{contact.name}</div>
+                      <div
+                        style={{
+                          ...styles.contactName,
+                          ...(selectedId === contact.id ? { color: "#1d4ed8", fontWeight: "800" } : {}),
+                        }}
+                      >
+                        {contact.name}
+                      </div>
                       <div style={styles.contactMeta}>
                         {contact.relationship}{contact.job ? ` • ${contact.job}` : ""}
                       </div>
@@ -598,15 +605,16 @@ const styles = {
     margin: "0 auto",
   },
   title: {
-    marginBottom: "8px",
-    fontSize: "32px",
-    lineHeight: 1.1,
+    fontSize: "28px",
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: "6px",
+    letterSpacing: "0.3px",
   },
   subtitle: {
-    marginTop: 0,
-    marginBottom: "20px",
-    color: "#6b7280",
-    fontSize: "16px",
+    fontSize: "14px",
+    color: "#475569",
+    marginBottom: "18px",
   },
   errorBox: {
     background: "#fef2f2",
@@ -747,7 +755,7 @@ const styles = {
   },
   contactButtonActive: {
     background: "#dbeafe",
-    border: "1px solid #60a5fa",
+    border: "1px solid #3b82f6",
   },
   contactButtonDueSoon: {
     border: "1px solid #f59e0b",
@@ -758,10 +766,10 @@ const styles = {
     background: "#fef2f2",
   },
   contactName: {
-    fontWeight: "bold",
+    fontWeight: "700",
     marginBottom: "4px",
     fontSize: "16px",
-    color: "#111827",
+    color: "#0f172a",
   },
   contactMeta: {
     fontSize: "13px",
