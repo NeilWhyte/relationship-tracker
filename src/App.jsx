@@ -15,7 +15,7 @@ function blankContact() {
     partner: "",
     children: "",
     pets: "",
-    trips: "",
+    other: "",
     notes: "",
     lastContacted: "",
     nextReminder: "",
@@ -53,7 +53,7 @@ function mapRowToContact(row) {
     partner: row.partner || "",
     children: row.children || "",
     pets: row.pets || "",
-    trips: row.trips || "",
+    other: row.other || "",
     notes: row.notes || "",
     lastContacted: row.last_contacted || "",
     nextReminder: row.next_reminder || "",
@@ -70,7 +70,7 @@ function mapContactToRow(contact) {
     partner: contact.partner || null,
     children: contact.children || null,
     pets: contact.pets || null,
-    trips: contact.trips || null,
+    other: contact.other || null,
     notes: contact.notes || null,
     last_contacted: contact.lastContacted || null,
     next_reminder: contact.nextReminder || null,
@@ -127,7 +127,7 @@ export default function App() {
         contact.partner,
         contact.children,
         contact.pets,
-        contact.trips,
+        contact.other,
         contact.notes,
       ]
         .join(" ")
@@ -298,7 +298,7 @@ export default function App() {
       job: null,
       birthday: null,
       family: null,
-      trips: null,
+      other: null,
       notes: quickAddNote.trim() || null,
       last_contacted: today,
       next_reminder: reminderDays ? addDaysToToday(reminderDays) : null,
@@ -596,7 +596,7 @@ export default function App() {
               <input placeholder="Partner" value={form.partner} onChange={(e) => setForm({ ...form, partner: e.target.value })} style={styles.input} />
               <input placeholder="Children" value={form.children} onChange={(e) => setForm({ ...form, children: e.target.value })} style={styles.input} />
               <input placeholder="Pets" value={form.pets} onChange={(e) => setForm({ ...form, pets: e.target.value })} style={styles.input} />
-              <input placeholder="Trips or experiences" value={form.trips} onChange={(e) => setForm({ ...form, trips: e.target.value })} style={styles.input} />
+              <input placeholder="Trips or experiences" value={form.other} onChange={(e) => setForm({ ...form, other: e.target.value })} style={styles.input} />
               <input type="date" value={form.lastContacted} onChange={(e) => setForm({ ...form, lastContacted: e.target.value })} style={styles.input} />
               <input type="date" value={form.nextReminder} onChange={(e) => setForm({ ...form, nextReminder: e.target.value })} style={styles.input} />
               <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} style={styles.textarea} />
