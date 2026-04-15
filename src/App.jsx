@@ -499,7 +499,7 @@ export default function App() {
                       <div><strong>Partner:</strong> {selectedContact.partner || ""}</div>
                       <div><strong>Children:</strong> {selectedContact.children || ""}</div>
                       <div><strong>Pets:</strong> {selectedContact.pets || ""}</div>
-                      <div><strong>Trips:</strong> {selectedContact.trips || ""}</div>
+                      <div><strong>Other:</strong> {selectedContact.other || ""}</div>
                       <div><strong>Last contacted:</strong> {formatDate(selectedContact.lastContacted)}</div>
                       <div><strong>Next reminder:</strong> {formatDate(selectedContact.nextReminder)}</div>
                     </div>
