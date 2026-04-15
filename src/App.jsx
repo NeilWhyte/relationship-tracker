@@ -83,6 +83,7 @@ export default function App() {
   const [contacts, setContacts] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(blankContact());
   const [conversationText, setConversationText] = useState("");
@@ -133,9 +134,22 @@ export default function App() {
         .join(" ")
         .toLowerCase();
 
-      return text.includes(search.toLowerCase());
+      const matchesSearch = text.includes(search.toLowerCase());
+      const diff = daysUntil(contact.nextReminder);
+      const isDue = diff !== null && diff <= 7;
+      const isOverdue = diff !== null && diff < 0;
+
+      if (filterMode === "due") {
+        return matchesSearch && isDue;
+      }
+
+      if (filterMode === "overdue") {
+        return matchesSearch && isOverdue;
+      }
+
+      return matchesSearch;
     });
-  }, [contacts, search]);
+  }, [contacts, search, filterMode]);
 
   const selectedContact =
     contacts.find((contact) => contact.id === selectedId) || filteredContacts[0] || null;
@@ -393,18 +407,36 @@ export default function App() {
         {errorMessage ? <div style={styles.errorBox}>{errorMessage}</div> : null}
 
         <div style={styles.topBar}>
-          <div style={styles.statBox}>
+          <button
+            onClick={() => setFilterMode("all")}
+            style={{
+              ...styles.statBox,
+              ...(filterMode === "all" ? styles.statBoxActive : {}),
+            }}
+          >
             <strong>{contacts.length}</strong>
             <span>Contacts</span>
-          </div>
-          <div style={styles.statBox}>
+          </button>
+          <button
+            onClick={() => setFilterMode("due")}
+            style={{
+              ...styles.statBox,
+              ...(filterMode === "due" ? styles.statBoxActive : {}),
+            }}
+          >
             <strong>{remindersDue}</strong>
             <span>Need a touch base</span>
-          </div>
-          <div style={styles.statBox}>
+          </button>
+          <button
+            onClick={() => setFilterMode("overdue")}
+            style={{
+              ...styles.statBox,
+              ...(filterMode === "overdue" ? styles.statBoxActive : {}),
+            }}
+          >
             <strong>{overdueCount}</strong>
             <span>Overdue</span>
-          </div>
+          </button>
           <button onClick={() => setShowQuickAdd(true)} style={styles.primaryButton} disabled={saving || loading}>Quick Add</button>
           <button onClick={openNewContact} style={styles.secondaryButton} disabled={saving || loading}>Add contact</button>
           <button onClick={exportData} style={styles.secondaryButton} disabled={saving || loading}>Export</button>
@@ -662,6 +694,12 @@ const styles = {
     justifyContent: "center",
     minWidth: "120px",
     flex: "1 1 120px",
+    cursor: "pointer",
+    textAlign: "center",
+  },
+  statBoxActive: {
+    background: "#dbeafe",
+    border: "1px solid #60a5fa",
   },
   layout: {
     display: "grid",
