@@ -428,7 +428,7 @@ export default function App() {
           <div style={styles.card}>Loading contacts...</div>
         ) : (
           <div style={{ ...styles.layout, ...(window.innerWidth >= 900 ? { gridTemplateColumns: "320px minmax(0, 1fr)" } : {}) }}>
-            <div style={{ ...styles.sidebar, ...(window.innerWidth >= 900 ? { order: 1 } : { order: 2 }) }}>
+            <div style={{ ...styles.sidebar, order: 1 }}>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -478,7 +478,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ ...styles.mainPanel, ...(window.innerWidth >= 900 ? { order: 2 } : { order: 1 }) }}>
+            <div style={{ ...styles.mainPanel, order: 2 }}>
               {selectedContact ? (
                 <>
                   <div style={styles.card}>
