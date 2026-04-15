@@ -415,7 +415,7 @@ export default function App() {
             }}
           >
             <strong>{contacts.length}</strong>
-            <span>Contacts</span>
+            <span style={{ color: "#374151" }}>Contacts</span>
           </button>
           <button
             onClick={() => setFilterMode("due")}
@@ -425,7 +425,7 @@ export default function App() {
             }}
           >
             <strong>{remindersDue}</strong>
-            <span>Need a touch base</span>
+            <span style={{ color: "#374151" }}>Need a touch base</span>
           </button>
           <button
             onClick={() => setFilterMode("overdue")}
@@ -435,7 +435,7 @@ export default function App() {
             }}
           >
             <strong>{overdueCount}</strong>
-            <span>Overdue</span>
+            <span style={{ color: "#374151" }}>Overdue</span>
           </button>
           <button onClick={() => setShowQuickAdd(true)} style={styles.primaryButton} disabled={saving || loading}>Quick Add</button>
           <button onClick={openNewContact} style={styles.secondaryButton} disabled={saving || loading}>Add contact</button>
@@ -696,6 +696,8 @@ const styles = {
     flex: "1 1 120px",
     cursor: "pointer",
     textAlign: "center",
+    color: "#1f2937",
+  },
   },
   statBoxActive: {
     background: "#dbeafe",
