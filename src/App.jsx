@@ -427,8 +427,8 @@ export default function App() {
         {loading ? (
           <div style={styles.card}>Loading contacts...</div>
         ) : (
-          <div style={styles.layout}>
-            <div style={styles.sidebar}>
+          <div style={{ ...styles.layout, ...(window.innerWidth >= 900 ? { gridTemplateColumns: "320px minmax(0, 1fr)" } : {}) }}>
+            <div style={{ ...styles.sidebar, ...(window.innerWidth >= 900 ? { order: 1 } : { order: 2 }) }}>
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -478,7 +478,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={styles.mainPanel}>
+            <div style={{ ...styles.mainPanel, ...(window.innerWidth >= 900 ? { order: 2 } : { order: 1 }) }}>
               {selectedContact ? (
                 <>
                   <div style={styles.card}>
@@ -487,13 +487,13 @@ export default function App() {
                         <h2 style={styles.detailName}>{selectedContact.name}</h2>
                         <div style={styles.smallText}>{selectedContact.relationship}</div>
                       </div>
-                      <div style={styles.buttonRow}>
+                      <div style={{ ...styles.buttonRow, ...(window.innerWidth >= 700 ? { flexWrap: "wrap" } : { flexDirection: "column", width: "100%" }) }}>
                         <button onClick={openEditContact} style={styles.secondaryButton} disabled={saving}>Edit</button>
                         <button onClick={deleteContact} style={styles.dangerButton} disabled={saving}>Delete</button>
                       </div>
                     </div>
 
-                    <div style={styles.detailsGrid}>
+                    <div style={{ ...styles.detailsGrid, ...(window.innerWidth >= 700 ? { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } : {}) }}>
                       <div><strong>Job:</strong> {selectedContact.job || ""}</div>
                       <div><strong>Birthday:</strong> {formatDate(selectedContact.birthday)}</div>
                       <div><strong>Partner:</strong> {selectedContact.partner || ""}</div>
@@ -506,7 +506,7 @@ export default function App() {
 
                     <div style={styles.reminderRow}>
                       <strong>Quick reminder:</strong>
-                      <div style={styles.buttonRow}>
+                      <div style={{ ...styles.buttonRow, ...(window.innerWidth >= 700 ? { flexWrap: "wrap" } : { flexDirection: "column", width: "100%" }) }}>
                         <button onClick={() => setReminder(7)} style={styles.secondaryButton} disabled={saving}>In 7 days</button>
                         <button onClick={() => setReminder(14)} style={styles.secondaryButton} disabled={saving}>In 14 days</button>
                         <button onClick={() => setReminder(30)} style={styles.secondaryButton} disabled={saving}>In 30 days</button>
@@ -570,7 +570,7 @@ export default function App() {
                 style={styles.textarea}
               />
 
-              <div style={styles.buttonRow}>
+              <div style={{ ...styles.buttonRow, ...(window.innerWidth >= 700 ? { flexWrap: "wrap" } : { flexDirection: "column", width: "100%" }) }}>
                 <button onClick={() => setShowQuickAdd(false)} style={styles.secondaryButton} disabled={saving}>Cancel</button>
                 <button onClick={() => quickAddContact(null)} style={styles.secondaryButton} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
                 <button onClick={() => quickAddContact(7)} style={styles.secondaryButton} disabled={saving}>{saving ? "Saving..." : "Save + 7d"}</button>
@@ -601,7 +601,7 @@ export default function App() {
               <input type="date" value={form.nextReminder} onChange={(e) => setForm({ ...form, nextReminder: e.target.value })} style={styles.input} />
               <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} style={styles.textarea} />
 
-              <div style={styles.buttonRow}>
+              <div style={{ ...styles.buttonRow, ...(window.innerWidth >= 700 ? { flexWrap: "wrap" } : { flexDirection: "column", width: "100%" }) }}>
                 <button onClick={() => setShowForm(false)} style={styles.secondaryButton} disabled={saving}>Cancel</button>
                 <button onClick={saveContact} style={styles.primaryButton} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
               </div>
@@ -626,7 +626,7 @@ const styles = {
     margin: "0 auto",
   },
   title: {
-    fontSize: "28px",
+    fontSize: "clamp(28px, 5vw, 38px)",
     fontWeight: "800",
     color: "#0f172a",
     marginBottom: "6px",
@@ -668,22 +668,21 @@ const styles = {
     marginBottom: "16px",
   },
   topBar: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-    marginBottom: "20px",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: "10px",
+    marginBottom: "18px",
     alignItems: "stretch",
   },
   statBox: {
     background: "white",
     border: "1px solid #d1d5db",
     borderRadius: "12px",
-    padding: "12px 16px",
+    padding: "12px 14px",
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    minWidth: "120px",
-    flex: "1 1 120px",
+    minHeight: "84px",
     cursor: "pointer",
     textAlign: "center",
     color: "#1f2937",
@@ -706,7 +705,7 @@ const styles = {
   },
   layout: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "minmax(0, 1fr)",
     gap: "16px",
   },
   sidebar: {
@@ -714,18 +713,21 @@ const styles = {
     border: "1px solid #d1d5db",
     borderRadius: "12px",
     padding: "14px",
+    order: 1,
   },
   mainPanel: {
     display: "flex",
     flexDirection: "column",
     gap: "16px",
     minWidth: 0,
+    order: 2,
   },
   card: {
     background: "white",
     border: "1px solid #d1d5db",
     borderRadius: "12px",
     padding: "16px",
+    overflow: "hidden",
   },
   cardHeader: {
     display: "flex",
@@ -749,6 +751,7 @@ const styles = {
     cursor: "pointer",
     minHeight: "44px",
     fontSize: "15px",
+    width: "100%",
   },
   secondaryButton: {
     background: "white",
@@ -763,6 +766,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     boxSizing: "border-box",
+    width: "100%",
   },
   dangerButton: {
     background: "#c0392b",
@@ -773,6 +777,7 @@ const styles = {
     cursor: "pointer",
     minHeight: "44px",
     fontSize: "15px",
+    width: "100%",
   },
   input: {
     width: "100%",
@@ -799,6 +804,9 @@ const styles = {
     flexDirection: "column",
     gap: "10px",
     marginTop: "10px",
+    maxHeight: "50vh",
+    overflowY: "auto",
+    paddingRight: "2px",
   },
   contactButton: {
     width: "100%",
@@ -835,15 +843,16 @@ const styles = {
   },
   detailsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns: "1fr",
     gap: "10px",
   },
   reminderRow: {
     marginTop: "16px",
     display: "flex",
     gap: "12px",
-    alignItems: "center",
+    alignItems: "flex-start",
     flexWrap: "wrap",
+    flexDirection: "column",
   },
   notesBox: {
     marginTop: "16px",
@@ -886,5 +895,8 @@ const styles = {
     borderRadius: "12px",
     padding: "20px",
     boxSizing: "border-box",
+  },
+  desktopOnly: {
+    display: "none",
   },
 };
