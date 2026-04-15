@@ -1,28 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
-const STORAGE_KEY = "relationship-tracker-simple-v1";
-
-const starterContacts = [
-  {
-    id: crypto.randomUUID(),
-    name: "Sarah Thompson",
-    relationship: "Friend",
-    job: "Architect",
-    birthday: "1990-07-14",
-    family: "Married, two children",
-    trips: "Italy in 2024, Cape Town in 2025",
-    notes: "Loves trail running and good coffee.",
-    lastContacted: "2026-04-01",
-    nextReminder: "2026-04-20",
-    conversations: [
-      {
-        id: crypto.randomUUID(),
-        date: "2026-04-01",
-        summary: "Caught up about her new project and family holiday plans.",
-      },
-    ],
-  },
-];
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 function blankContact() {
   return {
@@ -60,28 +41,73 @@ function addDaysToToday(days) {
   return date.toISOString().slice(0, 10);
 }
 
+function mapRowToContact(row) {
+  return {
+    id: row.id,
+    name: row.name || "",
+    relationship: row.relationship || "Friend",
+    job: row.job || "",
+    birthday: row.birthday || "",
+    family: row.family || "",
+    trips: row.trips || "",
+    notes: row.notes || "",
+    lastContacted: row.last_contacted || "",
+    nextReminder: row.next_reminder || "",
+    conversations: Array.isArray(row.conversations) ? row.conversations : [],
+  };
+}
+
+function mapContactToRow(contact) {
+  return {
+    name: contact.name,
+    relationship: contact.relationship || null,
+    job: contact.job || null,
+    birthday: contact.birthday || null,
+    family: contact.family || null,
+    trips: contact.trips || null,
+    notes: contact.notes || null,
+    last_contacted: contact.lastContacted || null,
+    next_reminder: contact.nextReminder || null,
+    conversations: Array.isArray(contact.conversations) ? contact.conversations : [],
+    updated_at: new Date().toISOString(),
+  };
+}
+
 export default function App() {
-  const [contacts, setContacts] = useState(starterContacts);
+  const [contacts, setContacts] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(blankContact());
   const [conversationText, setConversationText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setContacts(parsed);
-      setSelectedId(parsed[0]?.id || "");
-    } else {
-      setSelectedId(starterContacts[0].id);
-    }
+    loadContacts();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
-  }, [contacts]);
+  async function loadContacts() {
+    setLoading(true);
+    setErrorMessage("");
+
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setLoading(false);
+      return;
+    }
+
+    const mapped = (data || []).map(mapRowToContact);
+    setContacts(mapped);
+    setSelectedId((current) => current || mapped[0]?.id || "");
+    setLoading(false);
+  }
 
   const filteredContacts = useMemo(() => {
     return contacts.filter((contact) => {
@@ -103,6 +129,12 @@ export default function App() {
   const selectedContact =
     contacts.find((contact) => contact.id === selectedId) || filteredContacts[0] || null;
 
+  useEffect(() => {
+    if (!selectedId && filteredContacts[0]) {
+      setSelectedId(filteredContacts[0].id);
+    }
+  }, [filteredContacts, selectedId]);
+
   function openNewContact() {
     setForm(blankContact());
     setShowForm(true);
@@ -114,30 +146,91 @@ export default function App() {
     setShowForm(true);
   }
 
-  function saveContact() {
+  async function saveContact() {
     if (!form.name.trim()) return;
 
+    setSaving(true);
+    setErrorMessage("");
+
     if (form.id) {
-      setContacts((prev) => prev.map((c) => (c.id === form.id ? form : c)));
-      setSelectedId(form.id);
+      const { error } = await supabase
+        .from("contacts")
+        .update(mapContactToRow(form))
+        .eq("id", form.id);
+
+      if (error) {
+        setErrorMessage(error.message);
+        setSaving(false);
+        return;
+      }
     } else {
-      const newContact = { ...form, id: crypto.randomUUID(), conversations: [] };
-      setContacts((prev) => [newContact, ...prev]);
-      setSelectedId(newContact.id);
+      const { data, error } = await supabase
+        .from("contacts")
+        .insert([mapContactToRow({ ...form, conversations: [] })])
+        .select()
+        .single();
+
+      if (error) {
+        setErrorMessage(error.message);
+        setSaving(false);
+        return;
+      }
+
+      if (data?.id) {
+        setSelectedId(data.id);
+      }
     }
 
+    await loadContacts();
     setShowForm(false);
     setForm(blankContact());
+    setSaving(false);
   }
 
-  function deleteContact() {
+  async function deleteContact() {
     if (!selectedContact) return;
-    const updated = contacts.filter((c) => c.id !== selectedContact.id);
-    setContacts(updated);
-    setSelectedId(updated[0]?.id || "");
+
+    setSaving(true);
+    setErrorMessage("");
+
+    const { error } = await supabase
+      .from("contacts")
+      .delete()
+      .eq("id", selectedContact.id);
+
+    if (error) {
+      setErrorMessage(error.message);
+      setSaving(false);
+      return;
+    }
+
+    const remaining = contacts.filter((c) => c.id !== selectedContact.id);
+    setSelectedId(remaining[0]?.id || "");
+    await loadContacts();
+    setSaving(false);
   }
 
-  function addConversation() {
+  async function updateContact(contact) {
+    setSaving(true);
+    setErrorMessage("");
+
+    const { error } = await supabase
+      .from("contacts")
+      .update(mapContactToRow(contact))
+      .eq("id", contact.id);
+
+    if (error) {
+      setErrorMessage(error.message);
+      setSaving(false);
+      return false;
+    }
+
+    await loadContacts();
+    setSaving(false);
+    return true;
+  }
+
+  async function addConversation() {
     if (!selectedContact || !conversationText.trim()) return;
 
     const today = new Date().toISOString().slice(0, 10);
@@ -154,13 +247,13 @@ export default function App() {
       ],
     };
 
-    setContacts((prev) =>
-      prev.map((contact) => (contact.id === selectedContact.id ? updatedContact : contact))
-    );
-    setConversationText("");
+    const ok = await updateContact(updatedContact);
+    if (ok) {
+      setConversationText("");
+    }
   }
 
-  function setReminder(days) {
+  async function setReminder(days) {
     if (!selectedContact) return;
 
     const updatedContact = {
@@ -168,9 +261,43 @@ export default function App() {
       nextReminder: addDaysToToday(days),
     };
 
-    setContacts((prev) =>
-      prev.map((contact) => (contact.id === selectedContact.id ? updatedContact : contact))
-    );
+    await updateContact(updatedContact);
+  }
+
+  async function importData(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        if (!Array.isArray(parsed)) {
+          alert("That file could not be imported.");
+          return;
+        }
+
+        setSaving(true);
+        setErrorMessage("");
+
+        for (const contact of parsed) {
+          const row = mapContactToRow(contact);
+
+          if (contact.id) {
+            await supabase.from("contacts").upsert([{ id: contact.id, ...row }]);
+          } else {
+            await supabase.from("contacts").insert([row]);
+          }
+        }
+
+        await loadContacts();
+        setSaving(false);
+      } catch (error) {
+        alert("That file could not be imported.");
+        setSaving(false);
+      }
+    };
+    reader.readAsText(file);
   }
 
   function exportData() {
@@ -181,25 +308,6 @@ export default function App() {
     link.download = "relationship-tracker-backup.json";
     link.click();
     URL.revokeObjectURL(url);
-  }
-
-  function importData(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(reader.result);
-        if (Array.isArray(parsed)) {
-          setContacts(parsed);
-          setSelectedId(parsed[0]?.id || "");
-        }
-      } catch (error) {
-        alert("That file could not be imported.");
-      }
-    };
-    reader.readAsText(file);
   }
 
   const remindersDue = contacts.filter((contact) => {
@@ -218,6 +326,8 @@ export default function App() {
         <h1 style={styles.title}>Relationship Tracker</h1>
         <p style={styles.subtitle}>A simple place to keep tabs on friends, colleagues, and conversations.</p>
 
+        {errorMessage ? <div style={styles.errorBox}>{errorMessage}</div> : null}
+
         <div style={styles.topBar}>
           <div style={styles.statBox}>
             <strong>{contacts.length}</strong>
@@ -231,127 +341,132 @@ export default function App() {
             <strong>{overdueCount}</strong>
             <span>Overdue</span>
           </div>
-          <button onClick={openNewContact} style={styles.primaryButton}>Add contact</button>
-          <button onClick={exportData} style={styles.secondaryButton}>Export</button>
+          <button onClick={openNewContact} style={styles.primaryButton} disabled={saving || loading}>Add contact</button>
+          <button onClick={exportData} style={styles.secondaryButton} disabled={saving || loading}>Export</button>
           <label style={styles.secondaryButton}>
             Import
             <input type="file" accept="application/json" onChange={importData} style={{ display: "none" }} />
           </label>
+          <button onClick={loadContacts} style={styles.secondaryButton} disabled={saving || loading}>Refresh</button>
         </div>
 
-        <div style={styles.layout}>
-          <div style={styles.sidebar}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search people"
-              style={styles.input}
-            />
+        {loading ? (
+          <div style={styles.card}>Loading contacts...</div>
+        ) : (
+          <div style={styles.layout}>
+            <div style={styles.sidebar}>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search people"
+                style={styles.input}
+              />
 
-            <div style={styles.contactList}>
-              {filteredContacts.map((contact) => {
-                const diff = daysUntil(contact.nextReminder);
-                const overdue = diff !== null && diff < 0;
-                const dueSoon = diff !== null && diff >= 0 && diff <= 7;
+              <div style={styles.contactList}>
+                {filteredContacts.map((contact) => {
+                  const diff = daysUntil(contact.nextReminder);
+                  const overdue = diff !== null && diff < 0;
+                  const dueSoon = diff !== null && diff >= 0 && diff <= 7;
 
-                return (
-                  <button
-                    key={contact.id}
-                    onClick={() => setSelectedId(contact.id)}
-                    style={{
-                      ...styles.contactButton,
-                      ...(selectedContact?.id === contact.id ? styles.contactButtonActive : {}),
-                      ...(overdue ? styles.contactButtonOverdue : dueSoon ? styles.contactButtonDueSoon : {}),
-                    }}
-                  >
-                    <div style={styles.contactName}>{contact.name}</div>
-                    <div style={styles.contactMeta}>
-                      {contact.relationship}{contact.job ? ` • ${contact.job}` : ""}
+                  return (
+                    <button
+                      key={contact.id}
+                      onClick={() => setSelectedId(contact.id)}
+                      style={{
+                        ...styles.contactButton,
+                        ...(selectedContact?.id === contact.id ? styles.contactButtonActive : {}),
+                        ...(overdue ? styles.contactButtonOverdue : dueSoon ? styles.contactButtonDueSoon : {}),
+                      }}
+                    >
+                      <div style={styles.contactName}>{contact.name}</div>
+                      <div style={styles.contactMeta}>
+                        {contact.relationship}{contact.job ? ` • ${contact.job}` : ""}
+                      </div>
+                      <div style={styles.contactMeta}>
+                        {contact.nextReminder
+                          ? overdue
+                            ? `Overdue since ${formatDate(contact.nextReminder)}`
+                            : dueSoon
+                              ? `Due ${formatDate(contact.nextReminder)}`
+                              : `Reminder: ${formatDate(contact.nextReminder)}`
+                          : "No reminder set"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={styles.mainPanel}>
+              {selectedContact ? (
+                <>
+                  <div style={styles.card}>
+                    <div style={styles.cardHeader}>
+                      <div>
+                        <h2 style={{ ...styles.sectionTitle, fontSize: "30px" }}>{selectedContact.name}</h2>
+                        <div style={styles.smallText}>{selectedContact.relationship}</div>
+                      </div>
+                      <div style={styles.buttonRow}>
+                        <button onClick={openEditContact} style={styles.secondaryButton} disabled={saving}>Edit</button>
+                        <button onClick={deleteContact} style={styles.dangerButton} disabled={saving}>Delete</button>
+                      </div>
                     </div>
-                    <div style={styles.contactMeta}>
-                      {contact.nextReminder
-                        ? overdue
-                          ? `Overdue since ${formatDate(contact.nextReminder)}`
-                          : dueSoon
-                            ? `Due ${formatDate(contact.nextReminder)}`
-                            : `Reminder: ${formatDate(contact.nextReminder)}`
-                        : "No reminder set"}
+
+                    <div style={styles.detailsGrid}>
+                      <div><strong>Job:</strong> {selectedContact.job || ""}</div>
+                      <div><strong>Birthday:</strong> {formatDate(selectedContact.birthday)}</div>
+                      <div><strong>Family:</strong> {selectedContact.family || ""}</div>
+                      <div><strong>Trips:</strong> {selectedContact.trips || ""}</div>
+                      <div><strong>Last contacted:</strong> {formatDate(selectedContact.lastContacted)}</div>
+                      <div><strong>Next reminder:</strong> {formatDate(selectedContact.nextReminder)}</div>
                     </div>
-                  </button>
-                );
-              })}
+
+                    <div style={styles.reminderRow}>
+                      <strong>Quick reminder:</strong>
+                      <div style={styles.buttonRow}>
+                        <button onClick={() => setReminder(7)} style={styles.secondaryButton} disabled={saving}>In 7 days</button>
+                        <button onClick={() => setReminder(14)} style={styles.secondaryButton} disabled={saving}>In 14 days</button>
+                        <button onClick={() => setReminder(30)} style={styles.secondaryButton} disabled={saving}>In 30 days</button>
+                      </div>
+                    </div>
+
+                    <div style={styles.notesBox}>
+                      <strong>Notes</strong>
+                      <p style={{ marginTop: 8 }}>{selectedContact.notes || "No notes yet."}</p>
+                    </div>
+                  </div>
+
+                  <div style={styles.card}>
+                    <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Log a conversation</h3>
+                    <textarea
+                      value={conversationText}
+                      onChange={(e) => setConversationText(e.target.value)}
+                      placeholder="What did you talk about?"
+                      style={styles.textarea}
+                    />
+                    <button onClick={addConversation} style={styles.primaryButton} disabled={saving}>Save conversation</button>
+                  </div>
+
+                  <div style={styles.card}>
+                    <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Conversation history</h3>
+                    {selectedContact.conversations.length === 0 ? (
+                      <p style={styles.smallText}>No conversations logged yet.</p>
+                    ) : (
+                      selectedContact.conversations.map((conversation) => (
+                        <div key={conversation.id} style={styles.conversationItem}>
+                          <div style={styles.smallText}>{formatDate(conversation.date)}</div>
+                          <div>{conversation.summary}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div style={styles.card}>Select a contact to begin.</div>
+              )}
             </div>
           </div>
-
-          <div style={styles.mainPanel}>
-            {selectedContact ? (
-              <>
-                <div style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <h2 style={{ ...styles.sectionTitle, fontSize: "30px" }}>{selectedContact.name}</h2>
-                      <div style={styles.smallText}>{selectedContact.relationship}</div>
-                    </div>
-                    <div style={styles.buttonRow}>
-                      <button onClick={openEditContact} style={styles.secondaryButton}>Edit</button>
-                      <button onClick={deleteContact} style={styles.dangerButton}>Delete</button>
-                    </div>
-                  </div>
-
-                  <div style={styles.detailsGrid}>
-                    <div><strong>Job:</strong> {selectedContact.job || ""}</div>
-                    <div><strong>Birthday:</strong> {formatDate(selectedContact.birthday)}</div>
-                    <div><strong>Family:</strong> {selectedContact.family || ""}</div>
-                    <div><strong>Trips:</strong> {selectedContact.trips || ""}</div>
-                    <div><strong>Last contacted:</strong> {formatDate(selectedContact.lastContacted)}</div>
-                    <div><strong>Next reminder:</strong> {formatDate(selectedContact.nextReminder)}</div>
-                  </div>
-
-                  <div style={styles.reminderRow}>
-                    <strong>Quick reminder:</strong>
-                    <div style={styles.buttonRow}>
-                      <button onClick={() => setReminder(7)} style={styles.secondaryButton}>In 7 days</button>
-                      <button onClick={() => setReminder(14)} style={styles.secondaryButton}>In 14 days</button>
-                      <button onClick={() => setReminder(30)} style={styles.secondaryButton}>In 30 days</button>
-                    </div>
-                  </div>
-
-                  <div style={styles.notesBox}>
-                    <strong>Notes</strong>
-                    <p style={{ marginTop: 8 }}>{selectedContact.notes || "No notes yet."}</p>
-                  </div>
-                </div>
-
-                <div style={styles.card}>
-                  <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Log a conversation</h3>
-                  <textarea
-                    value={conversationText}
-                    onChange={(e) => setConversationText(e.target.value)}
-                    placeholder="What did you talk about?"
-                    style={styles.textarea}
-                  />
-                  <button onClick={addConversation} style={styles.primaryButton}>Save conversation</button>
-                </div>
-
-                <div style={styles.card}>
-                  <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Conversation history</h3>
-                  {selectedContact.conversations.length === 0 ? (
-                    <p style={styles.smallText}>No conversations logged yet.</p>
-                  ) : (
-                    selectedContact.conversations.map((conversation) => (
-                      <div key={conversation.id} style={styles.conversationItem}>
-                        <div style={styles.smallText}>{formatDate(conversation.date)}</div>
-                        <div>{conversation.summary}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
-            ) : (
-              <div style={styles.card}>Select a contact to begin.</div>
-            )}
-          </div>
-        </div>
+        )}
 
         {showForm && (
           <div style={styles.overlay}>
@@ -373,8 +488,8 @@ export default function App() {
               <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} style={styles.textarea} />
 
               <div style={styles.buttonRow}>
-                <button onClick={() => setShowForm(false)} style={styles.secondaryButton}>Cancel</button>
-                <button onClick={saveContact} style={styles.primaryButton}>Save</button>
+                <button onClick={() => setShowForm(false)} style={styles.secondaryButton} disabled={saving}>Cancel</button>
+                <button onClick={saveContact} style={styles.primaryButton} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
               </div>
             </div>
           </div>
@@ -406,6 +521,14 @@ const styles = {
     marginBottom: "20px",
     color: "#6b7280",
     fontSize: "16px",
+  },
+  errorBox: {
+    background: "#fef2f2",
+    color: "#991b1b",
+    border: "1px solid #fecaca",
+    padding: "12px 14px",
+    borderRadius: "10px",
+    marginBottom: "16px",
   },
   topBar: {
     display: "flex",
