@@ -80,6 +80,9 @@ export default function App() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(blankContact());
   const [conversationText, setConversationText] = useState("");
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickAddName, setQuickAddName] = useState("");
+  const [quickAddNote, setQuickAddNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -264,6 +267,59 @@ export default function App() {
     await updateContact(updatedContact);
   }
 
+  async function quickAddContact(reminderDays = null) {
+    if (!quickAddName.trim()) return;
+
+    setSaving(true);
+    setErrorMessage("");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const conversations = quickAddNote.trim()
+      ? [
+          {
+            id: crypto.randomUUID(),
+            date: today,
+            summary: quickAddNote.trim(),
+          },
+        ]
+      : [];
+
+    const newContact = {
+      name: quickAddName.trim(),
+      relationship: "Friend",
+      job: null,
+      birthday: null,
+      family: null,
+      trips: null,
+      notes: quickAddNote.trim() || null,
+      last_contacted: today,
+      next_reminder: reminderDays ? addDaysToToday(reminderDays) : null,
+      conversations,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("contacts")
+      .insert([newContact])
+      .select()
+      .single();
+
+    if (error) {
+      setErrorMessage(error.message);
+      setSaving(false);
+      return;
+    }
+
+    await loadContacts();
+    if (data?.id) {
+      setSelectedId(data.id);
+    }
+    setQuickAddName("");
+    setQuickAddNote("");
+    setShowQuickAdd(false);
+    setSaving(false);
+  }
+
   async function importData(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -341,7 +397,8 @@ export default function App() {
             <strong>{overdueCount}</strong>
             <span>Overdue</span>
           </div>
-          <button onClick={openNewContact} style={styles.primaryButton} disabled={saving || loading}>Add contact</button>
+          <button onClick={() => setShowQuickAdd(true)} style={styles.primaryButton} disabled={saving || loading}>Quick Add</button>
+          <button onClick={openNewContact} style={styles.secondaryButton} disabled={saving || loading}>Add contact</button>
           <button onClick={exportData} style={styles.secondaryButton} disabled={saving || loading}>Export</button>
           <label style={styles.secondaryButton}>
             Import
@@ -464,6 +521,35 @@ export default function App() {
               ) : (
                 <div style={styles.card}>Select a contact to begin.</div>
               )}
+            </div>
+          </div>
+        )}
+
+        {showQuickAdd && (
+          <div style={styles.overlay}>
+            <div style={styles.quickAddModal}>
+              <h2 style={{ ...styles.sectionTitle, fontSize: "24px" }}>Quick Add</h2>
+              <p style={styles.subtitle}>Name, quick note, and an optional reminder.</p>
+
+              <input
+                placeholder="Name"
+                value={quickAddName}
+                onChange={(e) => setQuickAddName(e.target.value)}
+                style={styles.input}
+              />
+              <textarea
+                placeholder="Quick note"
+                value={quickAddNote}
+                onChange={(e) => setQuickAddNote(e.target.value)}
+                style={styles.textarea}
+              />
+
+              <div style={styles.buttonRow}>
+                <button onClick={() => setShowQuickAdd(false)} style={styles.secondaryButton} disabled={saving}>Cancel</button>
+                <button onClick={() => quickAddContact(null)} style={styles.secondaryButton} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+                <button onClick={() => quickAddContact(7)} style={styles.secondaryButton} disabled={saving}>{saving ? "Saving..." : "Save + 7d"}</button>
+                <button onClick={() => quickAddContact(30)} style={styles.primaryButton} disabled={saving}>{saving ? "Saving..." : "Save + 30d"}</button>
+              </div>
             </div>
           </div>
         )}
@@ -716,6 +802,14 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: "16px",
+  },
+  quickAddModal: {
+    width: "100%",
+    maxWidth: "520px",
+    background: "white",
+    borderRadius: "12px",
+    padding: "20px",
+    boxSizing: "border-box",
   },
   modal: {
     width: "100%",
