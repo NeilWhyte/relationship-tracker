@@ -33,8 +33,7 @@ function daysUntil(value) {
   if (!value) return null;
   const today = new Date();
   const target = new Date(value + "T00:00:00");
-  const diff = Math.ceil((target - new Date(today.toDateString())) / (1000 * 60 * 60 * 24));
-  return diff;
+  return Math.ceil((target - new Date(today.toDateString())) / (1000 * 60 * 60 * 24));
 }
 
 function addDaysToToday(days) {
@@ -85,9 +84,9 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [form, setForm] = useState(blankContact());
   const [conversationText, setConversationText] = useState("");
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddName, setQuickAddName] = useState("");
   const [quickAddNote, setQuickAddNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -139,14 +138,8 @@ export default function App() {
       const isDue = diff !== null && diff <= 7;
       const isOverdue = diff !== null && diff < 0;
 
-      if (filterMode === "due") {
-        return matchesSearch && isDue;
-      }
-
-      if (filterMode === "overdue") {
-        return matchesSearch && isOverdue;
-      }
-
+      if (filterMode === "due") return matchesSearch && isDue;
+      if (filterMode === "overdue") return matchesSearch && isOverdue;
       return matchesSearch;
     });
   }, [contacts, search, filterMode]);
@@ -201,9 +194,7 @@ export default function App() {
         return;
       }
 
-      if (data?.id) {
-        setSelectedId(data.id);
-      }
+      if (data?.id) setSelectedId(data.id);
     }
 
     await loadContacts();
@@ -229,8 +220,6 @@ export default function App() {
       return;
     }
 
-    const remaining = contacts.filter((c) => c.id !== selectedContact.id);
-    setSelectedId(remaining[0]?.id || "");
     await loadContacts();
     setSaving(false);
   }
@@ -273,20 +262,15 @@ export default function App() {
     };
 
     const ok = await updateContact(updatedContact);
-    if (ok) {
-      setConversationText("");
-    }
+    if (ok) setConversationText("");
   }
 
   async function setReminder(days) {
     if (!selectedContact) return;
-
-    const updatedContact = {
+    await updateContact({
       ...selectedContact,
       nextReminder: addDaysToToday(days),
-    };
-
-    await updateContact(updatedContact);
+    });
   }
 
   async function quickAddContact(reminderDays = null) {
@@ -311,7 +295,9 @@ export default function App() {
       relationship: "Friend",
       job: null,
       birthday: null,
-      family: null,
+      partner: null,
+      children: null,
+      pets: null,
       other: null,
       notes: quickAddNote.trim() || null,
       last_contacted: today,
@@ -333,9 +319,7 @@ export default function App() {
     }
 
     await loadContacts();
-    if (data?.id) {
-      setSelectedId(data.id);
-    }
+    if (data?.id) setSelectedId(data.id);
     setQuickAddName("");
     setQuickAddNote("");
     setShowQuickAdd(false);
@@ -360,7 +344,6 @@ export default function App() {
 
         for (const contact of parsed) {
           const row = mapContactToRow(contact);
-
           if (contact.id) {
             await supabase.from("contacts").upsert([{ id: contact.id, ...row }]);
           } else {
@@ -370,7 +353,7 @@ export default function App() {
 
         await loadContacts();
         setSaving(false);
-      } catch (error) {
+      } catch {
         alert("That file could not be imported.");
         setSaving(false);
       }
@@ -409,34 +392,28 @@ export default function App() {
         <div style={styles.topBar}>
           <button
             onClick={() => setFilterMode("all")}
-            style={{
-              ...styles.statBox,
-              ...(filterMode === "all" ? styles.statBoxActive : {}),
-            }}
+            style={{ ...styles.statBox, ...(filterMode === "all" ? styles.statBoxActive : {}) }}
           >
-            <strong>{contacts.length}</strong>
-            <span style={{ color: "#374151" }}>Contacts</span>
+            <strong style={styles.statNumber}>{contacts.length}</strong>
+            <span style={styles.statLabel}>Contacts</span>
           </button>
+
           <button
             onClick={() => setFilterMode("due")}
-            style={{
-              ...styles.statBox,
-              ...(filterMode === "due" ? styles.statBoxActive : {}),
-            }}
+            style={{ ...styles.statBox, ...(filterMode === "due" ? styles.statBoxActive : {}) }}
           >
-            <strong>{remindersDue}</strong>
-            <span style={{ color: "#374151" }}>Need a touch base</span>
+            <strong style={styles.statNumber}>{remindersDue}</strong>
+            <span style={styles.statLabel}>Need a touch base</span>
           </button>
+
           <button
             onClick={() => setFilterMode("overdue")}
-            style={{
-              ...styles.statBox,
-              ...(filterMode === "overdue" ? styles.statBoxActive : {}),
-            }}
+            style={{ ...styles.statBox, ...(filterMode === "overdue" ? styles.statBoxActive : {}) }}
           >
-            <strong>{overdueCount}</strong>
-            <span style={{ color: "#374151" }}>Overdue</span>
+            <strong style={styles.statNumber}>{overdueCount}</strong>
+            <span style={styles.statLabel}>Overdue</span>
           </button>
+
           <button onClick={() => setShowQuickAdd(true)} style={styles.primaryButton} disabled={saving || loading}>Quick Add</button>
           <button onClick={openNewContact} style={styles.secondaryButton} disabled={saving || loading}>Add contact</button>
           <button onClick={exportData} style={styles.secondaryButton} disabled={saving || loading}>Export</button>
@@ -507,16 +484,7 @@ export default function App() {
                   <div style={styles.card}>
                     <div style={styles.cardHeader}>
                       <div>
-                        <h2
-              style={{
-                fontSize: "22px",
-                fontWeight: "800",
-                color: "#0f172a",
-                marginBottom: "6px",
-              }}
-            >
-              {selectedContact.name}
-            </h2>
+                        <h2 style={styles.detailName}>{selectedContact.name}</h2>
                         <div style={styles.smallText}>{selectedContact.relationship}</div>
                       </div>
                       <div style={styles.buttonRow}>
@@ -552,7 +520,7 @@ export default function App() {
                   </div>
 
                   <div style={styles.card}>
-                    <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Log a conversation</h3>
+                    <h3 style={styles.sectionTitle}>Log a conversation</h3>
                     <textarea
                       value={conversationText}
                       onChange={(e) => setConversationText(e.target.value)}
@@ -563,7 +531,7 @@ export default function App() {
                   </div>
 
                   <div style={styles.card}>
-                    <h3 style={{ ...styles.sectionTitle, fontSize: "20px" }}>Conversation history</h3>
+                    <h3 style={styles.sectionTitle}>Conversation history</h3>
                     {selectedContact.conversations.length === 0 ? (
                       <p style={styles.smallText}>No conversations logged yet.</p>
                     ) : (
@@ -586,7 +554,7 @@ export default function App() {
         {showQuickAdd && (
           <div style={styles.overlay}>
             <div style={styles.quickAddModal}>
-              <h2 style={{ ...styles.sectionTitle, fontSize: "24px" }}>Quick Add</h2>
+              <h2 style={styles.modalTitle}>Quick Add</h2>
               <p style={styles.subtitle}>Name, quick note, and an optional reminder.</p>
 
               <input
@@ -615,7 +583,7 @@ export default function App() {
         {showForm && (
           <div style={styles.overlay}>
             <div style={styles.modal}>
-              <h2 style={{ ...styles.sectionTitle, fontSize: "24px" }}>{form.id ? "Edit contact" : "Add contact"}</h2>
+              <h2 style={styles.modalTitle}>{form.id ? "Edit contact" : "Add contact"}</h2>
 
               <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={styles.input} />
               <select value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} style={styles.input}>
@@ -628,7 +596,7 @@ export default function App() {
               <input placeholder="Partner" value={form.partner} onChange={(e) => setForm({ ...form, partner: e.target.value })} style={styles.input} />
               <input placeholder="Children" value={form.children} onChange={(e) => setForm({ ...form, children: e.target.value })} style={styles.input} />
               <input placeholder="Pets" value={form.pets} onChange={(e) => setForm({ ...form, pets: e.target.value })} style={styles.input} />
-              <input placeholder="Trips or experiences" value={form.other} onChange={(e) => setForm({ ...form, other: e.target.value })} style={styles.input} />
+              <input placeholder="Other" value={form.other} onChange={(e) => setForm({ ...form, other: e.target.value })} style={styles.input} />
               <input type="date" value={form.lastContacted} onChange={(e) => setForm({ ...form, lastContacted: e.target.value })} style={styles.input} />
               <input type="date" value={form.nextReminder} onChange={(e) => setForm({ ...form, nextReminder: e.target.value })} style={styles.input} />
               <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} style={styles.textarea} />
@@ -647,7 +615,7 @@ export default function App() {
 
 const styles = {
   page: {
-    fontPartner: "Arial, sans-serif",
+    fontFamily: "Arial, sans-serif",
     background: "#e9edf2",
     minHeight: "100vh",
     padding: "16px",
@@ -663,11 +631,33 @@ const styles = {
     color: "#0f172a",
     marginBottom: "6px",
     letterSpacing: "0.3px",
+    textAlign: "center",
   },
   subtitle: {
     fontSize: "14px",
     color: "#475569",
     marginBottom: "18px",
+    textAlign: "center",
+  },
+  sectionTitle: {
+    marginTop: 0,
+    marginBottom: "8px",
+    fontSize: "20px",
+    lineHeight: 1.15,
+    color: "#0f172a",
+  },
+  modalTitle: {
+    marginTop: 0,
+    marginBottom: "8px",
+    fontSize: "24px",
+    lineHeight: 1.15,
+    color: "#0f172a",
+  },
+  detailName: {
+    fontSize: "22px",
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: "6px",
   },
   errorBox: {
     background: "#fef2f2",
@@ -698,10 +688,21 @@ const styles = {
     textAlign: "center",
     color: "#1f2937",
   },
-  },
   statBoxActive: {
     background: "#dbeafe",
     border: "1px solid #60a5fa",
+  },
+  statNumber: {
+    fontSize: "28px",
+    fontWeight: "800",
+    color: "#111827",
+    lineHeight: 1.1,
+  },
+  statLabel: {
+    fontSize: "15px",
+    fontWeight: "600",
+    color: "#374151",
+    marginTop: "6px",
   },
   layout: {
     display: "grid",
@@ -734,19 +735,13 @@ const styles = {
     marginBottom: "16px",
     flexWrap: "wrap",
   },
-  sectionTitle: {
-    marginTop: 0,
-    marginBottom: "8px",
-    fontSize: "24px",
-    lineHeight: 1.15,
-  },
   buttonRow: {
     display: "flex",
     gap: "8px",
     flexWrap: "wrap",
   },
   primaryButton: {
-    background: "#111827",
+    background: "#0f172a",
     color: "white",
     border: "none",
     borderRadius: "10px",
@@ -770,7 +765,7 @@ const styles = {
     boxSizing: "border-box",
   },
   dangerButton: {
-    background: "#b91c1c",
+    background: "#c0392b",
     color: "white",
     border: "none",
     borderRadius: "10px",
@@ -853,7 +848,7 @@ const styles = {
   notesBox: {
     marginTop: "16px",
     padding: "12px",
-    background: "#f9fafb",
+    background: "#f8fafc",
     borderRadius: "10px",
   },
   conversationItem: {
@@ -863,7 +858,7 @@ const styles = {
   },
   smallText: {
     fontSize: "13px",
-    color: "#6b7280",
+    color: "#64748b",
   },
   overlay: {
     position: "fixed",
