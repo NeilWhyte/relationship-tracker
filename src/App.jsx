@@ -588,10 +588,10 @@ export default function App() {
 const styles = {
   page: {
     fontFamily: "Arial, sans-serif",
-    background: "#f4f6f8",
+    background: "#e9edf2",
     minHeight: "100vh",
     padding: "16px",
-    color: "#1f2937",
+    color: "#111827",
   },
   container: {
     maxWidth: "1200px",
@@ -739,14 +739,15 @@ const styles = {
   contactButton: {
     width: "100%",
     textAlign: "left",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
+    background: "#ffffff",
+    border: "1px solid #cbd5e1",
     borderRadius: "12px",
     padding: "14px",
     cursor: "pointer",
   },
   contactButtonActive: {
-    background: "#e5e7eb",
+    background: "#dbeafe",
+    border: "1px solid #60a5fa",
   },
   contactButtonDueSoon: {
     border: "1px solid #f59e0b",
@@ -760,10 +761,11 @@ const styles = {
     fontWeight: "bold",
     marginBottom: "4px",
     fontSize: "16px",
+    color: "#111827",
   },
   contactMeta: {
     fontSize: "13px",
-    color: "#6b7280",
+    color: "#475569",
     marginBottom: "2px",
     lineHeight: 1.35,
   },
