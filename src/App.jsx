@@ -12,7 +12,9 @@ function blankContact() {
     relationship: "Friend",
     job: "",
     birthday: "",
-    family: "",
+    partner: "",
+    children: "",
+    pets: "",
     trips: "",
     notes: "",
     lastContacted: "",
@@ -48,7 +50,9 @@ function mapRowToContact(row) {
     relationship: row.relationship || "Friend",
     job: row.job || "",
     birthday: row.birthday || "",
-    family: row.family || "",
+    partner: row.partner || "",
+    children: row.children || "",
+    pets: row.pets || "",
     trips: row.trips || "",
     notes: row.notes || "",
     lastContacted: row.last_contacted || "",
@@ -63,7 +67,9 @@ function mapContactToRow(contact) {
     relationship: contact.relationship || null,
     job: contact.job || null,
     birthday: contact.birthday || null,
-    family: contact.family || null,
+    partner: contact.partner || null,
+    children: contact.children || null,
+    pets: contact.pets || null,
     trips: contact.trips || null,
     notes: contact.notes || null,
     last_contacted: contact.lastContacted || null,
@@ -118,7 +124,9 @@ export default function App() {
         contact.name,
         contact.relationship,
         contact.job,
-        contact.family,
+        contact.partner,
+        contact.children,
+        contact.pets,
         contact.trips,
         contact.notes,
       ]
@@ -488,7 +496,9 @@ export default function App() {
                     <div style={styles.detailsGrid}>
                       <div><strong>Job:</strong> {selectedContact.job || ""}</div>
                       <div><strong>Birthday:</strong> {formatDate(selectedContact.birthday)}</div>
-                      <div><strong>Family:</strong> {selectedContact.family || ""}</div>
+                      <div><strong>Partner:</strong> {selectedContact.partner || ""}</div>
+                      <div><strong>Children:</strong> {selectedContact.children || ""}</div>
+                      <div><strong>Pets:</strong> {selectedContact.pets || ""}</div>
                       <div><strong>Trips:</strong> {selectedContact.trips || ""}</div>
                       <div><strong>Last contacted:</strong> {formatDate(selectedContact.lastContacted)}</div>
                       <div><strong>Next reminder:</strong> {formatDate(selectedContact.nextReminder)}</div>
@@ -583,7 +593,9 @@ export default function App() {
               </select>
               <input placeholder="Job" value={form.job} onChange={(e) => setForm({ ...form, job: e.target.value })} style={styles.input} />
               <input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} style={styles.input} />
-              <input placeholder="Family details" value={form.family} onChange={(e) => setForm({ ...form, family: e.target.value })} style={styles.input} />
+              <input placeholder="Partner" value={form.partner} onChange={(e) => setForm({ ...form, partner: e.target.value })} style={styles.input} />
+              <input placeholder="Children" value={form.children} onChange={(e) => setForm({ ...form, children: e.target.value })} style={styles.input} />
+              <input placeholder="Pets" value={form.pets} onChange={(e) => setForm({ ...form, pets: e.target.value })} style={styles.input} />
               <input placeholder="Trips or experiences" value={form.trips} onChange={(e) => setForm({ ...form, trips: e.target.value })} style={styles.input} />
               <input type="date" value={form.lastContacted} onChange={(e) => setForm({ ...form, lastContacted: e.target.value })} style={styles.input} />
               <input type="date" value={form.nextReminder} onChange={(e) => setForm({ ...form, nextReminder: e.target.value })} style={styles.input} />
@@ -603,7 +615,7 @@ export default function App() {
 
 const styles = {
   page: {
-    fontFamily: "Arial, sans-serif",
+    fontPartner: "Arial, sans-serif",
     background: "#e9edf2",
     minHeight: "100vh",
     padding: "16px",
