@@ -16,6 +16,7 @@ function blankContact() {
     children: "",
     pets: "",
     other: "",
+    address: "",
     notes: "",
     lastContacted: "",
     nextReminder: "",
@@ -53,6 +54,7 @@ function mapRowToContact(row) {
     children: row.children || "",
     pets: row.pets || "",
     other: row.other || "",
+    address: row.address || "",
     notes: row.notes || "",
     lastContacted: row.last_contacted || "",
     nextReminder: row.next_reminder || "",
@@ -70,6 +72,7 @@ function mapContactToRow(contact) {
     children: contact.children || null,
     pets: contact.pets || null,
     other: contact.other || null,
+    address: contact.address || null,
     notes: contact.notes || null,
     last_contacted: contact.lastContacted || null,
     next_reminder: contact.nextReminder || null,
@@ -128,6 +131,7 @@ export default function App() {
         contact.children,
         contact.pets,
         contact.other,
+        contact.address,
         contact.notes,
       ]
         .join(" ")
@@ -299,6 +303,7 @@ export default function App() {
       children: null,
       pets: null,
       other: null,
+      address: null,
       notes: quickAddNote.trim() || null,
       last_contacted: today,
       next_reminder: reminderDays ? addDaysToToday(reminderDays) : null,
@@ -500,6 +505,7 @@ export default function App() {
                       <div><strong>Children:</strong> {selectedContact.children || ""}</div>
                       <div><strong>Pets:</strong> {selectedContact.pets || ""}</div>
                       <div><strong>Other:</strong> {selectedContact.other || ""}</div>
+                      <div><strong>Address:</strong> {selectedContact.address || ""}</div>
                       <div><strong>Last contacted:</strong> {formatDate(selectedContact.lastContacted)}</div>
                       <div><strong>Next reminder:</strong> {formatDate(selectedContact.nextReminder)}</div>
                     </div>
@@ -512,6 +518,17 @@ export default function App() {
                         <button onClick={() => setReminder(30)} style={styles.secondaryButton} disabled={saving}>In 30 days</button>
                       </div>
                     </div>
+
+                    {selectedContact.address ? (
+                      <div style={styles.addressActions}>
+                        <button
+                          onClick={() => window.open(`https://waze.com/ul?q=${encodeURIComponent(selectedContact.address)}`, "_blank")}
+                          style={styles.primaryButton}
+                        >
+                          Open in Waze
+                        </button>
+                      </div>
+                    ) : null}
 
                     <div style={styles.notesBox}>
                       <strong>Notes</strong>
@@ -597,6 +614,7 @@ export default function App() {
               <input placeholder="Children" value={form.children} onChange={(e) => setForm({ ...form, children: e.target.value })} style={styles.input} />
               <input placeholder="Pets" value={form.pets} onChange={(e) => setForm({ ...form, pets: e.target.value })} style={styles.input} />
               <input placeholder="Other" value={form.other} onChange={(e) => setForm({ ...form, other: e.target.value })} style={styles.input} />
+              <input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} style={styles.input} />
               <input type="date" value={form.lastContacted} onChange={(e) => setForm({ ...form, lastContacted: e.target.value })} style={styles.input} />
               <input type="date" value={form.nextReminder} onChange={(e) => setForm({ ...form, nextReminder: e.target.value })} style={styles.input} />
               <textarea placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} style={styles.textarea} />
@@ -853,6 +871,9 @@ const styles = {
     alignItems: "flex-start",
     flexWrap: "wrap",
     flexDirection: "column",
+  },
+  addressActions: {
+    marginTop: "16px",
   },
   notesBox: {
     marginTop: "16px",
