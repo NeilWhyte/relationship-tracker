@@ -467,7 +467,16 @@ export default function App() {
                   <div style={styles.card}>
                     <div style={styles.cardHeader}>
                       <div>
-                        <h2 style={{ ...styles.sectionTitle, fontSize: "30px" }}>{selectedContact.name}</h2>
+                        <h2
+              style={{
+                fontSize: "22px",
+                fontWeight: "800",
+                color: "#0f172a",
+                marginBottom: "6px",
+              }}
+            >
+              {selectedContact.name}
+            </h2>
                         <div style={styles.smallText}>{selectedContact.relationship}</div>
                       </div>
                       <div style={styles.buttonRow}>
